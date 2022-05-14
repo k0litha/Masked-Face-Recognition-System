@@ -33,13 +33,6 @@ def model_restore_from_pb(pb_path,node_dict,GPU_ratio=None):
             graph_def.ParseFromString(f.read())
             sess.graph.as_default()
 
-            #----issue solution if models with batch norm
-            '''
-            if batch normalzition：
-            ValueError: Input 0 of node InceptionResnetV2/Conv2d_1a_3x3/BatchNorm/cond_1/AssignMovingAvg/Switch was passed 
-            float from InceptionResnetV2/Conv2d_1a_3x3/BatchNorm/moving_mean:0 incompatible with expected float_ref.
-            ref:https://blog.csdn.net/dreamFlyWhere/article/details/83023256
-            '''
             for node in graph_def.node:
                 if node.op == 'RefSwitch':
                     node.op = 'Switch'
@@ -82,19 +75,9 @@ def video_init(camera_source=0,resolution="4cv::resize80",to_write=False,save_di
         width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)#default 640
         print("video size is auto set")
 
-    '''
-    ref:https://docs.opencv.org/master/dd/d43/tutorial_py_video_display.html
-    FourCC is a 4-byte code used to specify the video codec. 
-    The list of available codes can be found in fourcc.org. 
-    It is platform dependent. The following codecs work fine for me.
-    In Fedora: DIVX, XVID, MJPG, X264, WMV1, WMV2. (XVID is more preferable. MJPG results in high size video. X264 gives very small size video)
-    In Windows: DIVX (More to be tested and added)
-    In OSX: MJPG (.mp4), DIVX (.avi), X264 (.mkv).
-    FourCC code is passed as `cv.VideoWriter_fourcc('M','J','P','G')or cv.VideoWriter_fourcc(*'MJPG')` for MJPG.
-    '''
     if to_write is True:
         #fourcc = cv2.VideoWriter_fourcc('x', 'v', 'i', 'd')
-        #fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
+      
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         save_path = 'demo.avi'
         if save_dir is not None:
@@ -109,7 +92,7 @@ def stream(pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=
     # ----var
     frame_count = 0
     FPS = "loading"
-    face_mask_model_path = r'C:\Users\Koli\Desktop\face_mask_detection.pb'
+    face_mask_model_path = r'Trained_Models\maskmodel\savedmodel.pb'
     margin = 20
     id2class = {0: 'Mask', 1: 'NoMask'}
     batch_size = 20
@@ -220,9 +203,7 @@ def stream(pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=
                     else:
                         color = (0, 0, 255)  # (B,G,R) --> Red(without masks)
                     cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), color, 2)
-                    # cv2.putText(img, "%s: %.2f" % (id2class[class_id], re_confidence[num]), (bbox[0] + 2, bbox[1] - 2),
-                    #            cv2.FONT_HERSHEY_SIMPLEX, 0.8, color)
-
+                
 
                     # face recognition
                     name = ""
@@ -251,7 +232,7 @@ def stream(pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=
                 FPS = "FPS=%1f" % (10 / (time.time() - t_start))
                 frame_count = 0
 
-            # cv2.putText(img, text, coor, font, size, color, line thickness, line type)
+
             cv2.putText(img, FPS, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
 
             #image display
@@ -268,7 +249,7 @@ def stream(pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=
             elif key == ord('s'):
                 if len(bboxes) > 0:
                     img_temp = img[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2], :]
-                    save_path = "img_crop.jpg"
+                    save_path = "snapshot\img_crop.jpg"
                     save_path = os.path.join(ref_dir,save_path)
                     cv2.imwrite(save_path,img_temp)
                     print("An image is saved to ",save_path)
@@ -286,13 +267,13 @@ def stream(pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=
 
 if __name__ == "__main__":
     camera_source=0
-    pb_path = r"C:\faceRec\models\fully_trained_models_with_masks\pb_model_select_num=15.pb"
+    pb_path = r"Trained_Models\Facenetmodel\pb_model.pb"
     node_dict = {'input': 'input:0',
                  'keep_prob': 'keep_prob:0',
                  'phase_train': 'phase_train:0',
                  'embeddings': 'embeddings:0',
                  }
-    ref_dir = r"C:\faceRec\models\test_small"
-    stream(pb_path, node_dict,ref_dir,camera_source=camera_source, resolution='480', to_write=True, save_dir=None)
+    ref_dir = r"C:\faceRec\models\to_be_recognized"
+    stream(pb_path, node_dict,ref_dir,camera_source=camera_source, resolution='720', to_write=True, save_dir=None)
 
 
